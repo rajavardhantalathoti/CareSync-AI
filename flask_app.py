@@ -214,8 +214,8 @@ def extract_claim_with_ai(message: str, rag_context: str):
         "bill_amount": bill_amount
     }
 
-def get_default_docs():
-    return [
+def get_default_docs(message_text=""):
+    docs = [
         {"name": "Hospital Discharge Summary", "source": "mrd", "status": "PENDING", "hash": None},
         {"name": "Itemized Hospital Bill", "source": "mrd", "status": "PENDING", "hash": None},
         {"name": "OT Notes (Surgery)", "source": "mrd", "status": "PENDING", "hash": None},
@@ -223,6 +223,18 @@ def get_default_docs():
         {"name": "Govt Photo ID (Aadhaar)", "source": "patient", "status": "PENDING", "hash": None},
         {"name": "Cancelled Bank Cheque", "source": "patient", "status": "PENDING", "hash": None},
     ]
+    # Intelligent Detection: If patient mentions pathology, biopsy, histology, or lab report
+    msg_low = message_text.lower()
+    if any(k in msg_low for k in ["pathology", "biopsy", "histopathology", "histology", "lab report", "blood report", "culture"]):
+        docs.insert(3, {
+            "name": "Diagnostic Pathology / Biopsy Report",
+            "source": "mrd",
+            "status": "PENDING (INSURANCE QUERY)",
+            "hash": None,
+            "filename": None,
+            "notes": "Requested by Insurance Company for claim clearance"
+        })
+    return docs
 
 # ═══════════════════════════════════════════════════════════════════
 #  ROUTES: AUTHENTICATION
@@ -333,7 +345,7 @@ def claim_submit():
     ext = extract_claim_with_ai(msg, rag_ctx)
 
     claim_id = f"CLM-{uuid.uuid4().hex[:8].upper()}"
-    docs_json = json.dumps(get_default_docs())
+    docs_json = json.dumps(get_default_docs(msg))
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     conn = get_db()
@@ -440,6 +452,40 @@ def handle_messages():
         now_time = datetime.now().strftime("%H:%M")
         c.execute("INSERT INTO messages (patient_email, sender_name, sender_role, message, created_at) VALUES (?, ?, ?, ?, ?)",
                   (target_email, user["name"], user["role"], text, now_time))
+
+        # ── SMART DETECTION: If a patient requests a pathology/biopsy/lab report in chat ──
+        if user["role"] == "patient":
+            lower_text = text.lower()
+            detected_report = None
+            if "pathology" in lower_text or "biopsy" in lower_text or "histopath" in lower_text:
+                detected_report = "Diagnostic Pathology / Biopsy Report"
+            elif "blood report" in lower_text or "lab report" in lower_text or "lab test" in lower_text:
+                detected_report = "Diagnostic Laboratory & Blood Report"
+            elif "culture" in lower_text:
+                detected_report = "Microbiology Culture & Sensitivity Report"
+
+            if detected_report:
+                # Check active claim for this patient
+                c.execute("SELECT documents_json FROM claims WHERE patient_email = ?", (target_email,))
+                claim_row = c.fetchone()
+                if claim_row:
+                    claim_docs = json.loads(claim_row["documents_json"])
+                    # Only add if it doesn't already exist
+                    if not any(detected_report.lower() in d["name"].lower() for d in claim_docs):
+                        claim_docs.append({
+                            "name": detected_report,
+                            "source": "mrd",
+                            "status": "PENDING (INSURANCE QUERY)",
+                            "hash": None,
+                            "filename": None,
+                            "notes": f"Requested by patient via chat: '{text[:60]}...'"
+                        })
+                        c.execute("UPDATE claims SET documents_json = ? WHERE patient_email = ?", (json.dumps(claim_docs), target_email))
+                        # Auto-reply from MRD desk notifying that the item is queued for upload
+                        mrd_reply = f"📋 Noted! '{detected_report}' has been automatically added to your document requisition board for the MRD team to retrieve, sign, and upload."
+                        c.execute("INSERT INTO messages (patient_email, sender_name, sender_role, message, created_at) VALUES (?, ?, ?, ?, ?)",
+                                  (target_email, "Apollo MRD Desk", "mrd", mrd_reply, now_time))
+
         conn.commit()
 
     patient_email = request.args.get("patient_email") or user["email"]

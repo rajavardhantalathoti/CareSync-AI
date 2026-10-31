@@ -817,8 +817,14 @@ async function sendMessage(senderRole) {
   });
 
   document.getElementById(inputId).value = "";
-  if (senderRole === "patient") loadMessages(currentUser.email, "patientChatBox");
-  else loadMessages(activePatientEmail, "mrdChatBox");
+  if (senderRole === "patient") {
+    await loadMessages(currentUser.email, "patientChatBox");
+    // Reload patient dashboard so newly detected report requests appear immediately in the checklist
+    await loadPatientDashboard();
+  } else {
+    await loadMessages(activePatientEmail, "mrdChatBox");
+    await loadMrdDashboard();
+  }
 }
 </script>
 </body>
