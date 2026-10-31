@@ -1,5 +1,6 @@
 # 🏥 CareSync-AI: Smart Patient Onboarding & Hospital MRD Portal
 
+[![Live Demo](https://img.shields.io/badge/Render-Live_Demo-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://caresync-ai-tide.onrender.com/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Framework-Flask_3.x-lightgrey.svg)](https://flask.palletsprojects.com/)
 [![RAG Architecture](https://img.shields.io/badge/Retrieval-Hybrid_RAG_(ChromaDB_%2B_BM25)-purple.svg)]()
@@ -7,6 +8,9 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 > A streamlined, full-stack healthcare documentation and health insurance claim management platform connecting **Discharged Patients**, the **Hospital Medical Records Department (MRD)**, and **Hospital Super Administrators** in real-time.
+
+🌐 **Live Application URL:** **[https://caresync-ai-tide.onrender.com](https://caresync-ai-tide.onrender.com)**  
+*(Free tier instances may require 30–50 seconds to spin up on the first request if dormant).*
 
 ---
 
@@ -143,7 +147,10 @@ Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
 
 ## ☁️ Deployment (Render)
 
-This repository includes a pre-configured `render.yaml` ready for one-click deployment on Render:
+The application is deployed and running live on Render:
+- 🌐 **Production Instance**: **[https://caresync-ai-tide.onrender.com](https://caresync-ai-tide.onrender.com)**
+
+This repository includes a pre-configured `render.yaml` ready for one-click deployment or re-deployment on Render:
 
 1. Push this repository to your **GitHub** account.
 2. Go to **[dashboard.render.com](https://dashboard.render.com)** and create a new **Web Service**.
