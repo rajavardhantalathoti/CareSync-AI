@@ -223,9 +223,10 @@ def get_default_docs(message_text=""):
         {"name": "Govt Photo ID (Aadhaar)", "source": "patient", "status": "PENDING", "hash": None},
         {"name": "Cancelled Bank Cheque", "source": "patient", "status": "PENDING", "hash": None},
     ]
-    # Intelligent Detection: If patient mentions pathology, biopsy, histology, or lab report
+    # Intelligent Detection: If patient mentions pathology, biopsy, histology, or lab report (handles typos like pathalogy)
     msg_low = message_text.lower()
-    if any(k in msg_low for k in ["pathology", "biopsy", "histopathology", "histology", "lab report", "blood report", "culture"]):
+    keywords = ["pathology", "pathalogy", "patho", "biopsy", "histopathology", "histology", "lab report", "blood report", "culture", "test report"]
+    if any(k in msg_low for k in keywords):
         docs.insert(3, {
             "name": "Diagnostic Pathology / Biopsy Report",
             "source": "mrd",
@@ -457,7 +458,7 @@ def handle_messages():
         if user["role"] == "patient":
             lower_text = text.lower()
             detected_report = None
-            if "pathology" in lower_text or "biopsy" in lower_text or "histopath" in lower_text:
+            if "pathology" in lower_text or "pathalogy" in lower_text or "patho" in lower_text or "biopsy" in lower_text or "histopath" in lower_text:
                 detected_report = "Diagnostic Pathology / Biopsy Report"
             elif "blood report" in lower_text or "lab report" in lower_text or "lab test" in lower_text:
                 detected_report = "Diagnostic Laboratory & Blood Report"
