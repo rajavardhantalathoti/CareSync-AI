@@ -320,9 +320,20 @@
       <div class="col-lg-5">
         <div class="card p-4 h-100">
           <h6 class="fw-bold text-danger mb-2">👁️ Communication Auditor (Patient ↔ MRD)</h6>
-          <small class="text-secondary mb-3 d-block">Select any active conversation to audit the message thread:</small>
+          <small class="text-secondary mb-3 d-block">Search and audit any patient's live message thread:</small>
           
+          <!-- Instant Search & Filter Input for Thousands of Patients -->
+          <div class="input-group mb-2">
+            <span class="input-group-text bg-dark border-secondary text-secondary" style="font-size: 13px;">🔍 Find Patient</span>
+            <input type="text" id="adminPatientSearchInput" class="form-control form-control-sm" placeholder="Type email, name or ID to filter..." oninput="filterAdminConversations()">
+            <button class="btn btn-outline-secondary btn-sm" onclick="clearAdminSearch()" title="Clear search">✕</button>
+          </div>
+
           <select id="adminConvSelect" class="form-select mb-3" onchange="loadAdminChat()">
+            <option value="">-- Choose Patient Conversation --</option>
+          </select>
+
+          <div class="chat-box" id="adminChatBox">
             <option value="">-- Choose Patient Conversation --</option>
           </select>
 
@@ -734,10 +745,60 @@ async function loadAdminDashboard() {
     </tr>
   `).join("");
 
-  // Populate Conversations Dropdown
+  // Populate Conversations List with search metadata
+  window._allAdminConversations = (data.conversations || []).map(email => {
+    // Try to match email with registered user or claim to get patient name
+    const matchedUser = data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const matchedClaim = data.claims.find(c => c.patient_email && c.patient_email.toLowerCase() === email.toLowerCase());
+    const displayName = matchedUser ? matchedUser.name : (matchedClaim ? matchedClaim.patient_name : "Patient");
+    const dischargeId = matchedUser ? (matchedUser.discharge_id || "") : "";
+    return {
+      email: email,
+      label: `${displayName} (${email})${dischargeId ? ' • ' + dischargeId : ''}`,
+      searchKey: `${displayName} ${email} ${dischargeId}`.toLowerCase()
+    };
+  });
+
+  renderAdminConversationOptions(window._allAdminConversations);
+}
+
+function renderAdminConversationOptions(list) {
   const select = document.getElementById("adminConvSelect");
-  select.innerHTML = `<option value="">-- Choose Patient Conversation --</option>` +
-    data.conversations.map(email => `<option value="${email}">${email}</option>`).join("");
+  if (!select) return;
+  const currentVal = select.value;
+  if (list.length === 0) {
+    select.innerHTML = `<option value="">-- No matching patients found --</option>`;
+  } else {
+    select.innerHTML = `<option value="">-- Choose Patient Conversation (${list.length}) --</option>` +
+      list.map(item => `<option value="${item.email}">${item.label}</option>`).join("");
+    // Keep selection if still valid
+    if (list.some(i => i.email === currentVal)) {
+      select.value = currentVal;
+    }
+  }
+}
+
+function filterAdminConversations() {
+  const term = (document.getElementById("adminPatientSearchInput").value || "").trim().toLowerCase();
+  const all = window._allAdminConversations || [];
+  if (!term) {
+    renderAdminConversationOptions(all);
+    return;
+  }
+  const filtered = all.filter(item => item.searchKey.includes(term));
+  renderAdminConversationOptions(filtered);
+  // Auto-select and preview if exact 1 match found
+  if (filtered.length === 1) {
+    const select = document.getElementById("adminConvSelect");
+    select.value = filtered[0].email;
+    loadAdminChat();
+  }
+}
+
+function clearAdminSearch() {
+  const input = document.getElementById("adminPatientSearchInput");
+  if (input) input.value = "";
+  renderAdminConversationOptions(window._allAdminConversations || []);
 }
 
 async function loadAdminChat() {
