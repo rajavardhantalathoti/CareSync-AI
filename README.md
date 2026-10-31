@@ -126,9 +126,10 @@ Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
 
 ---
 
-## 🔑 Default Demo Credentials
+## 🧪 Demo & Testing Accounts (For Evaluators)
 
-For quick evaluation and demonstrations, pre-seeded demo accounts are available directly on the login screen:
+> [!NOTE]
+> The following pre-seeded credentials are mock test accounts intended solely for evaluating and demonstrating the portal's role-based workflows. Real secrets and API keys should always be loaded via `.env` and environment variables.
 
 | Role | Portal Tab | Email | Password | Access Level |
 | :--- | :--- | :--- | :--- | :--- |
