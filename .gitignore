@@ -1,0 +1,21 @@
+# Virtual Environment
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Local Storage & Caches
+.cache/
+.vscode/
+
+# SQLite Database (Render uses ephemeral — don't push local data)
+caresync.db
+
+# Ignore uploaded user files except folder structure
+uploads/*
+!uploads/.gitkeep

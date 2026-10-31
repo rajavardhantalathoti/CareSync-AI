@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Patient Onboarding & Hospital MRD Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root, [data-bs-theme=dark] {
+      --bs-body-color: #e2e8f0;
+      --bs-body-bg: #0b1120;
+      --bs-heading-color: #f8fafc;
+      --bs-secondary-color: #94a3b8;
+    }
+    body { background: #0b1120; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+    
+    /* High-contrast headings */
+    h1, h2, h3, h4, h5, h6 { color: #f8fafc !important; font-weight: 600; }
+    h1.text-primary, h2.text-primary, h3.text-primary, h4.text-primary, h5.text-primary, h6.text-primary { color: #60a5fa !important; }
+    h1.text-warning, h2.text-warning, h3.text-warning, h4.text-warning, h5.text-warning, h6.text-warning { color: #f59e0b !important; }
+    h1.text-danger, h2.text-danger, h3.text-danger, h4.text-danger, h5.text-danger, h6.text-danger { color: #f87171 !important; }
+    h1.text-success, h2.text-success, h3.text-success, h4.text-success, h5.text-success, h6.text-success { color: #34d399 !important; }
+    h1.text-info, h2.text-info, h3.text-info, h4.text-info, h5.text-info, h6.text-info { color: #38bdf8 !important; }
+
+    /* High-contrast labels & muted text */
+    .form-label, label { color: #cbd5e1 !important; font-weight: 500; font-size: 0.85rem; margin-bottom: 5px; }
+    .text-secondary { color: #94a3b8 !important; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    .form-control, .form-select { background: #0f172a !important; border: 1px solid #334155 !important; color: #f8fafc !important; border-radius: 8px; }
+    .form-control::placeholder { color: #64748b !important; opacity: 1; }
+    .form-control:focus, .form-select:focus { background: #0f172a !important; border-color: #3b82f6 !important; color: #fff !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important; }
+    
+    .alert-dark { background: #0f172a !important; border: 1px solid #334155 !important; color: #cbd5e1 !important; }
+    .alert-dark code { color: #38bdf8 !important; background: #1e293b; padding: 2px 6px; border-radius: 4px; }
+    
+    .nav-tabs { border-bottom: 1px solid #334155; }
+    .nav-tabs .nav-link { color: #94a3b8; border: none; border-bottom: 2px solid transparent; font-weight: 500; }
+    .nav-tabs .nav-link:hover { color: #e2e8f0; border-color: transparent; }
+    .nav-tabs .nav-link.active { color: #60a5fa !important; background: transparent; border-bottom: 2px solid #3b82f6 !important; font-weight: 600; }
+    
+    .chat-box { height: 350px; overflow-y: auto; background: #0f172a; border-radius: 10px; border: 1px solid #334155; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .msg-wrapper { display: flex; flex-direction: column; position: relative; }
+    .msg-mrd { background: #1e3a5f; color: #93c5fd; padding: 8px 12px; border-radius: 10px 10px 10px 2px; max-width: 85%; align-self: flex-start; font-size: 13px; position: relative; }
+    .msg-patient { background: #047857; color: #d1fae5; padding: 8px 12px; border-radius: 10px 10px 2px 10px; max-width: 85%; align-self: flex-end; font-size: 13px; position: relative; }
+    .msg-deleted { font-style: italic; opacity: 0.6; }
+    .msg-delete-btn { cursor: pointer; color: #f87171; font-size: 11px; margin-left: 6px; padding: 1px 4px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .msg-delete-btn:hover { background: #ef4444; color: #fff; }
+    .msg-admin { background: #7c2d12; color: #fed7aa; padding: 8px 12px; border-radius: 10px; max-width: 80%; align-self: center; font-size: 12px; }
+    .doc-pill { padding: 10px 14px; border-radius: 8px; background: #0f172a; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+    .badge-pending { background: #374151; color: #9ca3af; }
+    .badge-certified { background: #065f46; color: #6ee7b7; border: 1px solid #059669; }
+    table { font-size: 13px; }
+    th { color: #94a3b8; font-weight: 600; }
+  </style>
+</head>
+<body class="p-3">
+
+<div class="container-fluid" style="max-width: 1240px;">
+
+  <!-- Header & Authentication Status -->
+  <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary">
+    <div>
+      <h4 class="mb-0 fw-bold text-primary">🏥 Smart Patient Onboarding & MRD Portal</h4>
+      <small class="text-secondary">Digital Discharge Documentation, Patient-MRD Communication & Administrative Audit</small>
+    </div>
+    <div id="authNav"></div>
+  </header>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       1. AUTH FORMS
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="authContainer" class="row justify-content-center my-5" style="display: none;">
+    <div class="col-md-6 col-lg-5">
+      <div class="card p-4 shadow">
+        <ul class="nav nav-tabs mb-4" id="authTabs">
+          <li class="nav-item">
+            <button class="nav-link active" onclick="switchAuthTab('patient_login')">Patient Login</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" onclick="switchAuthTab('patient_signup')">Signup</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" onclick="switchAuthTab('mrd_login')">MRD Staff</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" onclick="switchAuthTab('admin_login')">Admin</button>
+          </li>
+        </ul>
+
+        <!-- Patient Login Form -->
+        <div id="patientLoginForm">
+          <h5 class="mb-3 text-light fw-bold">👤 Patient Portal Login</h5>
+          <div class="alert alert-dark border border-secondary small py-2 mb-3">
+            Default Patient: <code>raja@hospital.com</code> | Pass: <code>pass123</code>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Registered Email</label>
+            <input type="email" id="pLoginEmail" class="form-control" value="raja@hospital.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Password</label>
+            <input type="password" id="pLoginPass" class="form-control" value="pass123">
+          </div>
+          <button class="btn btn-primary w-100" onclick="handleLogin('pLoginEmail', 'pLoginPass', 'patient')">Login to Portal</button>
+        </div>
+
+        <!-- Patient Signup Form -->
+        <div id="patientSignupForm" style="display: none;">
+          <h5 class="mb-3 text-light fw-bold">📝 Smart Patient Onboarding (Registration)</h5>
+          <div class="mb-2">
+            <label class="form-label small text-secondary">Patient Full Name</label>
+            <input type="text" id="pSignName" class="form-control" placeholder="Rajav">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small text-secondary">Hospital Inpatient (IP) / Discharge Number</label>
+            <input type="text" id="pSignIP" class="form-control" placeholder="IP-2024-8921">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small text-secondary">Email Address</label>
+            <input type="email" id="pSignEmail" class="form-control" placeholder="rajav@example.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Create Secure Password</label>
+            <input type="password" id="pSignPass" class="form-control" placeholder="••••••••">
+          </div>
+          <button class="btn btn-success w-100" onclick="handleSignup()">Complete Onboarding & Enter</button>
+        </div>
+
+        <!-- MRD Staff Login Form -->
+        <div id="mrdLoginForm" style="display: none;">
+          <h5 class="mb-3 text-warning">🏥 MRD Records Staff Login</h5>
+          <div class="alert alert-dark border border-secondary small py-2">
+            Email: <code>mrd@hospital.com</code> | Pass: <code>password123</code>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Staff Email</label>
+            <input type="email" id="mrdEmail" class="form-control" value="mrd@hospital.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Staff Password</label>
+            <input type="password" id="mrdPass" class="form-control" value="password123">
+          </div>
+          <button class="btn btn-warning w-100" onclick="handleLogin('mrdEmail', 'mrdPass', 'mrd')">Access MRD Desk</button>
+        </div>
+
+        <!-- Admin Login Form -->
+        <div id="adminLoginForm" style="display: none;">
+          <h5 class="mb-3 text-danger">🛡️ Super Admin Portal Login</h5>
+          <div class="alert alert-dark border border-secondary small py-2">
+            Email: <code>admin@hospital.com</code> | Pass: <code>admin123</code>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Admin Email</label>
+            <input type="email" id="adminEmail" class="form-control" value="admin@hospital.com">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Admin Password</label>
+            <input type="password" id="adminPass" class="form-control" value="admin123">
+          </div>
+          <button class="btn btn-danger w-100" onclick="handleLogin('adminEmail', 'adminPass', 'admin')">Access Admin Audit</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       2. PATIENT PORTAL
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="patientView" style="display: none;">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-bold text-info">📄 Request Records from MRD</h6>
+            <div class="d-flex gap-2 align-items-center">
+              <button id="patientResetBtn" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px; display: none;" onclick="resetPatientClaim()">🗑️ Cancel Request</button>
+              <span class="badge bg-secondary" id="patientStatusPill">New Requisition</span>
+            </div>
+          </div>
+          <p class="small text-secondary mb-2">
+            Describe your insurance and admission details. AI + Hybrid RAG will create the official record request for the hospital.
+          </p>
+          <textarea id="patientClaimMsg" class="form-control mb-3" rows="3" 
+            placeholder="e.g. Admitted to Apollo for appendectomy surgery. Star Health Policy SH-2024-88129. Dr. Sharma was my doctor."></textarea>
+          <button class="btn btn-primary w-100 mb-3" onclick="submitPatientClaim()">🚀 Request Hospital Records</button>
+
+          <div id="patientDocChecklist" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="small fw-bold text-light text-uppercase mb-0">📋 Document Status</h6>
+              <button class="btn btn-outline-warning btn-sm py-0 px-2" style="font-size: 11px;" onclick="promptAddExtraReport()">
+                ➕ Request Extra Report (Insurer Query)
+              </button>
+            </div>
+            <div id="patientDocsContainer" class="d-flex flex-column gap-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-bold text-success">💬 Live Chat with MRD Desk</h6>
+            <div class="d-flex gap-2 align-items-center">
+              <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px;" onclick="clearAllChat()">🧹 Clear Chat</button>
+              <span class="badge bg-success small">Online</span>
+            </div>
+          </div>
+          <div class="chat-box mb-3" id="patientChatBox"></div>
+          <div class="input-group">
+            <input type="text" id="patientChatInput" class="form-control" placeholder="Ask MRD about discharge summary, OT notes...">
+            <button class="btn btn-success" onclick="sendMessage('patient')">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       3. MRD PORTAL
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="mrdView" style="display: none;">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card p-4 h-100">
+          <h6 class="mb-3 fw-bold text-warning">🏥 Patient Document Requisitions</h6>
+          <div id="mrdClaimsList" class="d-flex flex-column gap-3">
+            <p class="text-secondary small">No requests submitted yet.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card p-4 h-100">
+          <h6 class="mb-3 fw-bold text-info">💬 Chat with Patient: <span id="mrdSelectedPatientName">Select Patient</span></h6>
+          <div class="chat-box mb-3" id="mrdChatBox">
+            <div class="text-secondary text-center my-auto small">Click a patient on the left to read and reply to their messages</div>
+          </div>
+          <div class="input-group">
+            <input type="text" id="mrdChatInput" class="form-control" placeholder="Type response to patient..." disabled>
+            <button class="btn btn-warning" id="mrdSendBtn" onclick="sendMessage('mrd')" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       4. SUPER ADMIN PORTAL (Users, Queries & Chat Audit)
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="adminView" style="display: none;">
+    
+    <!-- Top Stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 text-center">
+          <small class="text-secondary">Total Registered Users</small>
+          <h3 class="fw-bold text-primary mb-0 mt-1" id="adminStatUsers">0</h3>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 text-center">
+          <small class="text-secondary">MRD Queries / Claims Raised</small>
+          <h3 class="fw-bold text-warning mb-0 mt-1" id="adminStatClaims">0</h3>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 text-center">
+          <small class="text-secondary">Database Engine</small>
+          <h5 class="fw-bold text-success mb-0 mt-2">SQLite (Local caresync.db)</h5>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      
+      <!-- Registered Users Table -->
+      <div class="col-lg-7">
+        <div class="card p-3 mb-4">
+          <h6 class="fw-bold mb-3 text-light">👥 All Registered Users</h6>
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Discharge / ID</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Queries / Claims Raised -->
+        <div class="card p-3">
+          <h6 class="fw-bold mb-3 text-warning">📋 Requisitions / Queries Raised to MRD</h6>
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Claim ID</th>
+                  <th>Patient</th>
+                  <th>Insurer</th>
+                  <th>Hospital</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="adminClaimsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Chat Auditor -->
+      <div class="col-lg-5">
+        <div class="card p-4 h-100">
+          <h6 class="fw-bold text-danger mb-2">👁️ Communication Auditor (Patient ↔ MRD)</h6>
+          <small class="text-secondary mb-3 d-block">Select any active conversation to audit the message thread:</small>
+          
+          <select id="adminConvSelect" class="form-select mb-3" onchange="loadAdminChat()">
+            <option value="">-- Choose Patient Conversation --</option>
+          </select>
+
+          <div class="chat-box" id="adminChatBox">
+            <div class="text-secondary text-center my-auto small">Choose a patient from the dropdown above to audit their live messages</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentUser = null;
+let activePatientEmail = null;
+
+window.onload = async () => {
+  const res = await fetch("/api/auth/me");
+  const data = await res.json();
+  if (data.logged_in) {
+    currentUser = data.user;
+    showMainPortal();
+  } else {
+    showAuth();
+  }
+};
+
+function showAuth() {
+  document.getElementById("authContainer").style.display = "flex";
+  document.getElementById("patientView").style.display = "none";
+  document.getElementById("mrdView").style.display = "none";
+  document.getElementById("adminView").style.display = "none";
+  document.getElementById("authNav").innerHTML = "";
+}
+
+function switchAuthTab(type) {
+  document.querySelectorAll("#authTabs .nav-link").forEach(btn => btn.classList.remove("active"));
+  document.getElementById("patientLoginForm").style.display = type === "patient_login" ? "block" : "none";
+  document.getElementById("patientSignupForm").style.display = type === "patient_signup" ? "block" : "none";
+  document.getElementById("mrdLoginForm").style.display = type === "mrd_login" ? "block" : "none";
+  document.getElementById("adminLoginForm").style.display = type === "admin_login" ? "block" : "none";
+  event.target.classList.add("active");
+}
+
+async function handleSignup() {
+  const name = document.getElementById("pSignName").value.trim();
+  const discharge_id = document.getElementById("pSignIP").value.trim();
+  const email = document.getElementById("pSignEmail").value.trim();
+  const password = document.getElementById("pSignPass").value.trim();
+
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({name, discharge_id, email, password})
+  });
+  const data = await res.json();
+  if (data.error) return alert(data.error);
+  currentUser = data.user;
+  showMainPortal();
+}
+
+async function handleLogin(emailId, passId, expectedRole = 'patient') {
+  const email = document.getElementById(emailId).value.trim();
+  const password = document.getElementById(passId).value.trim();
+
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email, password, role: expectedRole})
+  });
+  const data = await res.json();
+  if (data.error) return alert(data.error);
+  currentUser = data.user;
+  showMainPortal();
+}
+
+async function handleLogout() {
+  await fetch("/api/auth/logout", {method: "POST"});
+  currentUser = null;
+  location.reload();
+}
+
+function showMainPortal() {
+  document.getElementById("authContainer").style.display = "none";
+  document.getElementById("authNav").innerHTML = `
+    <div class="d-flex align-items-center gap-3">
+      <span class="small text-secondary">Logged in: <strong class="text-white">${currentUser.name}</strong> (${currentUser.role.toUpperCase()})</span>
+      <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">Logout</button>
+    </div>
+  `;
+
+  document.getElementById("patientView").style.display = currentUser.role === "patient" ? "block" : "none";
+  document.getElementById("mrdView").style.display = currentUser.role === "mrd" ? "block" : "none";
+  document.getElementById("adminView").style.display = currentUser.role === "admin" ? "block" : "none";
+
+  if (currentUser.role === "patient") loadPatientDashboard();
+  if (currentUser.role === "mrd") loadMrdDashboard();
+  if (currentUser.role === "admin") loadAdminDashboard();
+}
+
+// ── Patient ────────────────────────────────────────────────────────
+async function loadPatientDashboard() {
+  const res = await fetch("/api/claim/current");
+  const data = await res.json();
+  if (data.claim) {
+    renderPatientDocs(data.claim);
+  }
+  loadMessages(currentUser.email, "patientChatBox");
+}
+
+async function submitPatientClaim() {
+  const inputEl = document.getElementById("patientClaimMsg");
+  let msg = inputEl.value.trim();
+  
+  // If user hasn't typed anything, use the realistic sample text automatically
+  if (!msg) {
+    msg = "Admitted to Apollo Hospital for appendectomy surgery. Star Health Policy SH-2024-88129. Dr. Sharma was my treating doctor. Bill amount Rs 1,85,000.";
+    inputEl.value = msg;
+  }
+
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "⏳ Processing Request...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch("/api/claim/submit", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Error: " + data.error);
+    } else {
+      await loadPatientDashboard();
+    }
+  } catch (err) {
+    alert("Connection error: " + err);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+function renderPatientDocs(claim) {
+  document.getElementById("patientDocChecklist").style.display = "block";
+  document.getElementById("patientStatusPill").textContent = claim.status;
+  document.getElementById("patientStatusPill").className = "badge bg-info";
+  document.getElementById("patientResetBtn").style.display = "inline-block";
+
+  const container = document.getElementById("patientDocsContainer");
+  if (!claim.documents || claim.documents.length === 0) {
+    container.innerHTML = `<div class="p-3 text-secondary text-center small rounded border border-secondary">No documents in this ticket.</div>`;
+    return;
+  }
+
+  container.innerHTML = claim.documents.map(d => {
+    const isCertified = d.status.startsWith('CERTIFIED') || d.status === 'UPLOADED';
+    const isMrdDoc = d.source === 'mrd';
+    const canPatientUpload = !isMrdDoc || d.status.includes('INSURANCE QUERY');
+
+    return `
+      <div class="doc-pill">
+        <div>
+          <div class="small fw-bold">${d.name}</div>
+          <small class="text-secondary">${isMrdDoc ? '🏥 Official Record (Provided & Signed by MRD)' : '👤 Patient Document (Upload Your Copy)'}</small>
+          ${d.notes ? `<div style="font-size:10px; color:#f59e0b;">⚠️ ${d.notes}</div>` : ''}
+          ${d.hash ? `<div style="font-size:10px; color:#10b981;">🔐 ${d.hash}</div>` : ''}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="status-badge ${isCertified ? 'badge-certified' : 'badge-pending'}">${d.status}</span>
+          
+          <!-- Download Button: Visible whenever document is Sealed or Uploaded -->
+          ${d.filename ? `
+            <a href="/api/documents/download/${d.filename}" class="btn btn-success btn-sm py-0 px-2 fw-semibold" style="font-size: 11px;" target="_blank" title="Download Sealed Record">
+              ⬇ Download
+            </a>
+          ` : ''}
+
+          <!-- Upload Button: ONLY for patient-provided documents or extra query reports -->
+          ${canPatientUpload ? `
+            <label class="btn btn-outline-primary btn-sm py-0 px-2 mb-0" style="font-size: 11px; cursor: pointer;" title="Upload PDF, Word or Image">
+              📤 Upload
+              <input type="file" style="display: none;" onchange="uploadDocFile(event, '${d.name.replace(/'/g, "\\'")}', '${currentUser.email}')" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg">
+            </label>
+          ` : ''}
+
+          <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px;" title="Delete this document" onclick="removeIndividualDoc('${d.name.replace(/'/g, "\\'")}')">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function promptAddExtraReport() {
+  const reportName = prompt("Enter the name of the extra report/certificate requested by your insurance company:\n(e.g., Biopsy Pathology Report, Pre-Authorization Letter, Surgeon Medical Certificate)");
+  if (!reportName || !reportName.trim()) return;
+
+  const reason = prompt("Enter the reason / insurer query note (optional):", "Mandated by Insurance Company for claim settlement");
+
+  try {
+    const res = await fetch("/api/claim/add-custom-doc", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({report_name: reportName.trim(), reason: reason})
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Error: " + data.error);
+    } else {
+      alert("Extra report request added! MRD desk notified in chat.");
+      await loadPatientDashboard();
+    }
+  } catch (err) {
+    alert("Connection error: " + err);
+  }
+}
+
+async function uploadDocFile(event, docName, patientEmail) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("doc_name", docName);
+  formData.append("patient_email", patientEmail);
+
+  const btn = event.target.parentElement;
+  const originalText = btn.innerHTML;
+  btn.innerText = "⏳ Uploading...";
+
+  try {
+    const res = await fetch("/api/documents/upload", {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Upload failed: " + data.error);
+    } else {
+      alert(`✅ Uploaded "${file.name}" successfully! Digital seal: ${data.hash}`);
+      if (currentUser.role === "patient") {
+        await loadPatientDashboard();
+      } else {
+        await loadMrdDashboard();
+      }
+    }
+  } catch (err) {
+    alert("Upload error: " + err);
+  } finally {
+    btn.innerHTML = originalText;
+  }
+}
+
+async function removeIndividualDoc(docName) {
+  try {
+    const res = await fetch("/api/claim/remove-doc", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({doc_name: docName})
+    });
+    const data = await res.json();
+    if (data.success) {
+      await loadPatientDashboard();
+    } else {
+      alert("Error: " + (data.error || "Could not delete"));
+    }
+  } catch (err) {
+    alert("Connection error: " + err);
+  }
+}
+
+async function resetPatientClaim() {
+  if (!confirm("Delete and cancel this record requisition ticket?")) return;
+
+  await fetch("/api/claim/reset", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"}
+  });
+
+  // Hide the checklist and reset pill
+  document.getElementById("patientDocChecklist").style.display = "none";
+  document.getElementById("patientResetBtn").style.display = "none";
+  document.getElementById("patientStatusPill").textContent = "New Requisition";
+  document.getElementById("patientStatusPill").className = "badge bg-secondary";
+  document.getElementById("patientClaimMsg").value = "";
+}
+
+// ── MRD ────────────────────────────────────────────────────────────
+async function loadMrdDashboard() {
+  const res = await fetch("/api/claim/current");
+  const data = await res.json();
+  const claims = data.all_claims || [];
+  const container = document.getElementById("mrdClaimsList");
+
+  if (claims.length === 0) {
+    container.innerHTML = `<p class="text-secondary small">No requests submitted yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = claims.map(c => `
+    <div class="p-3 border border-secondary rounded" style="background: #0f172a; cursor: pointer;" onclick="selectPatientForMrd('${c.patient_email}', '${c.patient_name}')">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <strong class="text-warning">${c.patient_name}</strong>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary small">${c.claim_id}</span>
+          <button class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 11px;" title="Delete this ticket" onclick="event.stopPropagation(); deleteTicketByMrd('${c.patient_email}')">🗑️ Delete</button>
+        </div>
+      </div>
+      <div class="small text-secondary mb-2">Hospital: ${c.hospital} | Insurer: ${c.insurer}</div>
+      <div class="d-flex flex-column gap-1 mb-2">
+        ${c.documents.map(d => `
+          <div class="d-flex justify-content-between align-items-center small p-2 rounded border border-dark mb-1" style="background:#0b1120;">
+            <div>
+              <span class="fw-semibold">${d.name}</span>
+              ${d.notes ? `<div style="font-size:10px; color:#f59e0b;">⚠️ ${d.notes}</div>` : ''}
+              ${d.hash ? `<div style="font-size:10px; color:#10b981;">🔐 ${d.hash}</div>` : ''}
+            </div>
+            <div class="d-flex align-items-center gap-1">
+              ${d.filename ? `
+                <a href="/api/documents/download/${d.filename}" class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 10px;" target="_blank" title="View/Download File">
+                  ⬇ Download
+                </a>
+              ` : ''}
+
+              <!-- MRD Upload Real File & Seal -->
+              <label class="btn btn-outline-primary btn-sm py-0 px-2 mb-0" style="font-size: 10px; cursor: pointer;" title="Upload Signed PDF/Word File">
+                📤 Upload & Seal
+                <input type="file" style="display: none;" onchange="uploadDocFile(event, '${d.name.replace(/'/g, "\\'")}', '${c.patient_email}')" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg">
+              </label>
+
+              <!-- One-Click Digital Seal -->
+              ${d.status.startsWith('CERTIFIED') 
+                ? `<span class="badge-certified status-badge">SEALED</span>`
+                : `<button class="btn btn-sm btn-success py-0 px-2" style="font-size: 10px;" onclick="event.stopPropagation(); signDocForPatient('${c.patient_email}', '${d.name}')">✍ Seal</button>`
+              }
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <small class="text-info">👉 Click to chat with this patient</small>
+    </div>
+  `).join("");
+}
+
+function selectPatientForMrd(email, name) {
+  activePatientEmail = email;
+  document.getElementById("mrdSelectedPatientName").textContent = name;
+  document.getElementById("mrdChatInput").disabled = false;
+  document.getElementById("mrdSendBtn").disabled = false;
+  loadMessages(email, "mrdChatBox");
+}
+
+async function signDocForPatient(patientEmail, docName) {
+  await fetch("/api/mrd/sign", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({patient_email: patientEmail, doc_name: docName})
+  });
+  loadMrdDashboard();
+  if (activePatientEmail === patientEmail) loadMessages(patientEmail, "mrdChatBox");
+}
+
+async function deleteTicketByMrd(patientEmail) {
+  if (!confirm("Are you sure you want to delete this patient's requisition ticket?")) return;
+
+  await fetch("/api/claim/reset", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({patient_email: patientEmail})
+  });
+  loadMrdDashboard();
+  if (activePatientEmail === patientEmail) {
+    document.getElementById("mrdChatBox").innerHTML = `<div class="text-secondary text-center my-auto small">Ticket deleted</div>`;
+  }
+}
+
+// ── Admin ──────────────────────────────────────────────────────────
+async function loadAdminDashboard() {
+  const res = await fetch("/api/admin/overview");
+  const data = await res.json();
+  if (data.error) return alert(data.error);
+
+  document.getElementById("adminStatUsers").textContent = data.total_users;
+  document.getElementById("adminStatClaims").textContent = data.total_claims;
+
+  // Render Users
+  document.getElementById("adminUsersTbody").innerHTML = data.users.map(u => `
+    <tr>
+      <td>${u.name}</td>
+      <td>${u.email}</td>
+      <td><span class="badge ${u.role === 'admin' ? 'bg-danger' : u.role === 'mrd' ? 'bg-warning' : 'bg-primary'}">${u.role.toUpperCase()}</span></td>
+      <td><code>${u.discharge_id || '-'}</code></td>
+      <td class="text-secondary">${u.created_at}</td>
+    </tr>
+  `).join("");
+
+  // Render Claims
+  document.getElementById("adminClaimsTbody").innerHTML = data.claims.map(c => `
+    <tr>
+      <td><strong>${c.claim_id}</strong></td>
+      <td>${c.patient_name}</td>
+      <td>${c.insurer}</td>
+      <td>${c.hospital}</td>
+      <td><span class="badge bg-info">${c.status}</span></td>
+    </tr>
+  `).join("");
+
+  // Populate Conversations Dropdown
+  const select = document.getElementById("adminConvSelect");
+  select.innerHTML = `<option value="">-- Choose Patient Conversation --</option>` +
+    data.conversations.map(email => `<option value="${email}">${email}</option>`).join("");
+}
+
+async function loadAdminChat() {
+  const email = document.getElementById("adminConvSelect").value;
+  if (!email) {
+    document.getElementById("adminChatBox").innerHTML = `<div class="text-secondary text-center my-auto small">Select a patient above to audit their messages</div>`;
+    return;
+  }
+  loadMessages(email, "adminChatBox");
+}
+
+// ── Messaging ──────────────────────────────────────────────────────
+async function loadMessages(patientEmail, boxId) {
+  if (!patientEmail) return;
+  const res = await fetch(`/api/messages?patient_email=${patientEmail}`);
+  const data = await res.json();
+  const box = document.getElementById(boxId);
+  const msgs = data.messages || [];
+
+  box.innerHTML = msgs.map(m => {
+    const isDeleted = m.text.includes("🚫 This message was deleted");
+    // Allow deleting any active message in this thread
+    const canDelete = !isDeleted;
+
+    return `
+      <div class="${m.role === 'mrd' ? 'msg-mrd' : m.role === 'admin' ? 'msg-admin' : 'msg-patient'} ${isDeleted ? 'msg-deleted' : ''}">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span style="font-size:10px; opacity:0.8;">${m.sender} • ${m.timestamp}</span>
+          ${canDelete ? `<span class="msg-delete-btn" title="Delete for everyone" onclick="deleteMessageForEveryone(${m.id}, '${patientEmail}', '${boxId}')">🗑️ Delete</span>` : ''}
+        </div>
+        <div>${m.text}</div>
+      </div>
+    `;
+  }).join("");
+  box.scrollTop = box.scrollHeight;
+}
+
+async function deleteMessageForEveryone(msgId, patientEmail, boxId) {
+  try {
+    const res = await fetch("/api/messages/delete", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message_id: msgId})
+    });
+    const data = await res.json();
+    if (data.success) {
+      await loadMessages(patientEmail, boxId);
+    } else {
+      alert("Delete failed: " + (data.error || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Connection error: " + err);
+  }
+}
+
+async function clearAllChat() {
+  if (!confirm("Clear all duplicate messages and start with a clean chat?")) return;
+  
+  await fetch("/api/messages/clear", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({patient_email: currentUser.email})
+  });
+  loadMessages(currentUser.email, "patientChatBox");
+}
+
+async function sendMessage(senderRole) {
+  const inputId = senderRole === "patient" ? "patientChatInput" : "mrdChatInput";
+  const text = document.getElementById(inputId).value.trim();
+  if (!text) return;
+
+  const targetEmail = senderRole === "patient" ? currentUser.email : activePatientEmail;
+  await fetch("/api/messages", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({text: text, patient_email: targetEmail})
+  });
+
+  document.getElementById(inputId).value = "";
+  if (senderRole === "patient") loadMessages(currentUser.email, "patientChatBox");
+  else loadMessages(activePatientEmail, "mrdChatBox");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+• The Real-World Problem: Healthcare clinics and insurance platforms struggle with long patient onboarding queues. Patients often fill out long forms with missing information, or describe symptoms poorly, meaning medical staff have to manually call them back to gather details.
+• The Agentic Solution: An intelligent intake system that converses with a patient, extracts their medical history into structured data, and flags cases to the right department based on urgency.
+• Why Recruiters Will Hire You: It shows you can implement Human-in-the-loop guardrails and strict validation, which is vital for high-stakes fields like healthcare, finance, and law.
+• How the LangGraph State Machine Works:[Patient Inputs Symptoms / History]
+              │
+              ▼
+    ┌──────────────────┐
+    │ Validation Node  │ ──► Checks if critical medical data is missing.
+    └──────────────────┘
+              │
+     (Is critical data missing?)
+       ├──► YES ──► [Follow-up Agent] ──► Dynamic conversation node to ask for missing facts.
+       └──► NO
+              │
+              ▼
+    ┌──────────────────┐
+    │   Triage Agent   │ ──► Analyzes severity (Low, Medium, Critical).
+    └──────────────────┘
+              │
+        (Severity Level?)
+       ├──► LOW/MED  ──► [Auto-Scheduler Node] ──► Suggests standard booking links.
+       └──► CRITICAL ──► [HUMAN INTERRUPT]      ──► Freezes graph state; alerts an 
+                                                   on-duty doctor immediately.
